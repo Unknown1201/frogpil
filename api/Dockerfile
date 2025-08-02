@@ -1,29 +1,22 @@
-# ✅ Use correct base image with Apache
 FROM webdevops/php-apache:8.2
 
-# Set working directory
 WORKDIR /app
 
-# Copy code
+# Copy Laravel project files
 COPY . .
 
-# Install system dependencies and PHP extensions
+# Install PHP extensions needed for PostgreSQL and zip
 RUN apt-get update && apt-get install -y unzip zip libzip-dev libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql zip
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Install Laravel dependencies
+# Install Laravel PHP dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Set permissions
-RUN chown -R application:application /app
-
-# Laravel setup
+# Set Laravel app key and default .env
 RUN cp .env.example .env && php artisan key:generate
 
-# Expose default web port
+# Apache will run automatically in this image
 EXPOSE 80
-
-# Start Apache (already handled by this image, no CMD needed)
