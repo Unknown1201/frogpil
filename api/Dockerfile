@@ -1,34 +1,29 @@
-FROM php:8.2-apache
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql zip
-
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# ✅ Use correct base image with Apache
+FROM webdevops/php-apache:8.2
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Copy project files
+# Copy code
 COPY . .
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+# Install system dependencies and PHP extensions
+RUN apt-get update && apt-get install -y unzip zip libzip-dev libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql zip
 
-# Install Composer globally
-COPY --from=composer:2.5 /usr/bin/composer /usr/bin/composer
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Install PHP dependencies
+# Install Laravel dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Laravel boot commands
-RUN cp .env.example .env \
-    && php artisan key:generate
+# Set permissions
+RUN chown -R application:application /app
 
+# Laravel setup
+RUN cp .env.example .env && php artisan key:generate
+
+# Expose default web port
 EXPOSE 80
 
-# Start Apache (this prevents exit code 127)
-CMD ["apache2-foreground"]
+# Start Apache (already handled by this image, no CMD needed)
